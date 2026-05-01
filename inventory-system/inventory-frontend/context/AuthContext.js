@@ -3,20 +3,26 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../lib/axios';
 import { useRouter } from 'next/navigation';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // START as true
     const router = useRouter();
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        if (token && savedUser) {
-            setUser(JSON.parse(savedUser));
+        // On app load, check localStorage for saved token/user
+        try {
+            const token = localStorage.getItem('token');
+            const savedUser = localStorage.getItem('user');
+            if (token && savedUser) {
+                setUser(JSON.parse(savedUser));
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false); // Only set false AFTER checking localStorage
         }
-        setLoading(false);
     }, []);
 
     const login = async (email, password) => {
@@ -28,7 +34,9 @@ export function AuthProvider({ children }) {
     };
 
     const logout = async () => {
-        await api.post('/logout');
+        try {
+            await api.post('/logout');
+        } catch {}
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
